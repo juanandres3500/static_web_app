@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora GET | IMCApp</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #e0f2fe, #f0fdf4);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: rgb(189, 212, 218);
+    width: 100%;
+    max-width: 500px;
+    padding: 35px;
+    border-radius: 20px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    color: #0f766e;
+    font-size: 28px;
+}
+
+.header p {
+    color: #64748b;
+    margin-top: 8px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+input, select {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 15px;
+    outline: none;
+}
+
+input:focus, select:focus {
+    border-color: #0f766e;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    background: #0f766e;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #115e59;
+}
+
+.resultado {
+    display: none;
+    margin-top: 25px;
+    padding: 22px;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.resultado h2 {
+    color: #0f766e;
+    font-size: 17px;
+}
+
+.calorias {
+    font-size: 36px;
+    font-weight: bold;
+    color: #134e4a;
+    margin: 12px 0;
+}
+
+.resultado p {
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.error {
+    color: #dc2626;
+    margin-top: 12px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Gasto Energético Total</h1>
+        <p>Calculadora de Gasto Energético Total (GET)</p>
+    </div>
+
+    <form id="formulario">
+
+        <label for="sexo">Sexo biológico</label>
+        <select id="sexo" required>
+            <option value="">Selecciona una opción</option>
+            <option value="hombre">Hombre</option>
+            <option value="mujer">Mujer</option>
+        </select>
+
+        <label for="edad">Edad (años)</label>
+        <input type="number" id="edad" placeholder="Ej: 25" min="1" max="120" required>
+
+        <label for="peso">Peso (kg)</label>
+        <input type="number" id="peso" placeholder="Ej: 70" min="1" max="500" step="any" required>
+
+        <label for="estatura">Estatura (cm)</label>
+        <input type="number" id="estatura" placeholder="Ej: 175" min="50" max="250" step="any" required>
+
+        <label for="actividad">Nivel de actividad física</label>
+        <select id="actividad" required>
+            <option value="">Selecciona tu actividad</option>
+            <option value="1.2">Sedentario (poco o ningún ejercicio)</option>
+            <option value="1.375">Ligero (1-3 días por semana)</option>
+            <option value="1.55">Moderado (3-5 días por semana)</option>
+            <option value="1.725">Alto (6-7 días por semana)</option>
+            <option value="1.9">Muy alto (entrenamiento intenso)</option>
+        </select>
+
+        <button type="submit">Calcular GET</button>
+
+        <div class="error" id="error"></div>
+
+    </form>
+
+    <div class="resultado" id="resultado">
+        <h2>Tu gasto energético total estimado es:</h2>
+        <div class="calorias" id="calorias"></div>
+        <p>kilocalorías por día (kcal/día)</p>
+        <br>
+        <p id="detalle"></p>
+    </div>
+
+    <div class="footer">
+        IMCApp © 2026 | Calculadora de salud y nutrición
+    </div>
+
+</div>
+
+<script>
+
+document.getElementById("formulario").addEventListener("submit", function(e) {
+
+    e.preventDefault();
+
+    const sexo = document.getElementById("sexo").value;
+    const edad = Number(document.getElementById("edad").value);
+    const peso = Number(document.getElementById("peso").value);
+    const estatura = Number(document.getElementById("estatura").value);
+    const actividad = Number(document.getElementById("actividad").value);
+
+    const error = document.getElementById("error");
+    const resultado = document.getElementById("resultado");
+
+    error.textContent = "";
+    resultado.style.display = "none";
+
+    if (!sexo || !actividad || !edad || !peso || !estatura ||
+        edad < 1 || edad > 120 ||
+        peso <= 0 || peso > 500 ||
+        estatura < 50 || estatura > 250) {
+
+        error.textContent = "Por favor, introduce datos válidos.";
+        return;
+    }
+
+    // Fórmula de Mifflin-St Jeor
+    let tmb;
+
+    if (sexo === "hombre") {
+        tmb = (10 * peso) + (6.25 * estatura) - (5 * edad) + 5;
+    } else {
+        tmb = (10 * peso) + (6.25 * estatura) - (5 * edad) - 161;
+    }
+
+    // Cálculo del GET
+    const get = tmb * actividad;
+
+    document.getElementById("calorias").textContent =
+        Math.round(get).toLocaleString("es-CO") + " kcal";
+
+    document.getElementById("detalle").innerHTML =
+        "Tu TMB estimada es de <strong>" + Math.round(tmb) +
+        " kcal/día</strong>.<br>" +
+        "Factor de actividad: <strong>" + actividad +
+        "</strong>.<br><br>" +
+        "Tu organismo necesita aproximadamente <strong>" +
+        Math.round(get) +
+        " kcal diarias</strong> para mantener tu peso actual.";
+
+    resultado.style.display = "block";
+
+});
+
+</script>
+
+</body>
+</html>
