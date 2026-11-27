@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de IMC</title>
+    <!-- Cargamos Tailwind CSS para un diseño limpio y moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente Inter para una excelente legibilidad -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex items-center justify-center p-4 antialiased selection:bg-blue-100 selection:text-blue-900">
+
+    <!-- Contenedor principal de la calculadora -->
+    <main class="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-8 transition-all">
+        
+        <!-- Encabezado -->
+        <header class="text-center mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Calculadora de IMC</h1>
+            <p class="text-sm text-slate-500 mt-1.5">Índice de Masa Corporal</p>
+        </header>
+
+        <!-- Formulario de entrada de datos -->
+        <form id="imcForm" class="space-y-5" novalidate>
+            
+            <!-- Campo de Peso -->
+            <div>
+                <label for="peso" class="block text-sm font-medium text-slate-700 mb-1.5">
+                    Peso (kg)
+                </label>
+                <div class="relative">
+                    <input 
+                        type="number" 
+                        id="peso" 
+                        name="peso" 
+                        step="0.1" 
+                        min="1" 
+                        max="500"
+                        placeholder="Ej. 70.5" 
+                        required
+                        class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-base"
+                    >
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400 pointer-events-none">
+                        kg
+                    </span>
+                </div>
+            </div>
+
+            <!-- Campo de Altura -->
+            <div>
+                <label for="altura" class="block text-sm font-medium text-slate-700 mb-1.5">
+                    Altura (cm o m)
+                </label>
+                <div class="relative">
+                    <input 
+                        type="number" 
+                        id="altura" 
+                        name="altura" 
+                        step="0.01" 
+                        min="0.1" 
+                        max="300"
+                        placeholder="Ej. 175 o 1.75" 
+                        required
+                        class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-base"
+                    >
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400 pointer-events-none">
+                        cm / m
+                    </span>
+                </div>
+            </div>
+
+            <!-- Mensaje de error (oculto por defecto) -->
+            <div id="errorMsg" class="hidden rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-600 text-center" role="alert">
+                Por favor, ingresa valores válidos mayores a cero.
+            </div>
+
+            <!-- Botón de cálculo -->
+            <button 
+                type="submit" 
+                class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 px-4 shadow-md shadow-blue-600/20 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer text-base"
+            >
+                Calcular IMC
+            </button>
+        </form>
+
+        <!-- Sección de Resultado (oculta inicialmente) -->
+        <section id="resultadoBox" class="hidden mt-8 pt-6 border-t border-slate-100 text-center transition-all" aria-live="polite">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Tu resultado</p>
+            
+            <!-- Valor numérico del IMC -->
+            <div id="imcValor" class="text-5xl font-bold text-slate-900 tracking-tight my-2">
+                0.0
+            </div>
+            
+            <!-- Etiqueta de categoría -->
+            <div class="mt-3 flex justify-center">
+                <span id="imcCategoria" class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold">
+                    Categoría
+                </span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Lógica de cálculo en JavaScript puro -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('imcForm');
+            const pesoInput = document.getElementById('peso');
+            const alturaInput = document.getElementById('altura');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultadoBox = document.getElementById('resultadoBox');
+            const imcValor = document.getElementById('imcValor');
+            const imcCategoria = document.getElementById('imcCategoria');
+
+            /**
+             * Maneja el envío del formulario para calcular el IMC
+             */
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                try {
+                    // Obtener y convertir los valores de entrada
+                    const peso = parseFloat(pesoInput.value);
+                    let altura = parseFloat(alturaInput.value);
+
+                    // Validar que sean números positivos válidos
+                    if (isNaN(peso) || isNaN(altura) || peso <= 0 || altura <= 0) {
+                        mostrarError('Por favor, ingresa un peso y una altura válidos.');
+                        return;
+                    }
+
+                    // Detección inteligente de unidad: si la altura es mayor a 3, se asume que está en centímetros
+                    if (altura > 3) {
+                        altura = altura / 100;
+                    }
+
+                    // Validar rango lógico de altura en metros (entre 0.3m y 3.0m)
+                    if (altura < 0.3 || altura > 3) {
+                        mostrarError('Por favor, verifica la altura ingresada (ej. 175 cm o 1.75 m).');
+                        return;
+                    }
+
+                    // Ocultar mensaje de error si todo es correcto
+                    errorMsg.classList.add('hidden');
+
+                    // Fórmula del IMC: peso (kg) / [estatura (m)]^2
+                    const imc = peso / (altura * altura);
+                    const imcFormateado = imc.toFixed(1);
+
+                    // Determinar categoría y estilos visuales según estándares de la OMS
+                    let categoriaTexto = '';
+                    let clasesColor = '';
+
+                    if (imc < 18.5) {
+                        categoriaTexto = 'Bajo peso';
+                        clasesColor = 'bg-sky-100 text-sky-800 border border-sky-200';
+                    } else if (imc >= 18.5 && imc < 25) {
+                        categoriaTexto = 'Peso normal';
+                        clasesColor = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                    } else if (imc >= 25 && imc < 30) {
+                        categoriaTexto = 'Sobrepeso';
+                        clasesColor = 'bg-amber-100 text-amber-800 border border-amber-200';
+                    } else {
+                        categoriaTexto = 'Obesidad';
+                        clasesColor = 'bg-rose-100 text-rose-800 border border-rose-200';
+                    }
+
+                    // Actualizar la interfaz con los resultados
+                    imcValor.textContent = imcFormateado;
+                    imcCategoria.textContent = categoriaTexto;
+                    imcCategoria.className = `inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold ${clasesColor}`;
+                    
+                    // Mostrar el contenedor de resultados
+                    resultadoBox.classList.remove('hidden');
+
+                } catch (error) {
+                    mostrarError('Ocurrió un error al calcular. Inténtalo de nuevo.');
+                }
+            });
+
+            /**
+             * Muestra un mensaje de validación en la interfaz y oculta resultados previos
+             */
+            function mostrarError(mensaje) {
+                errorMsg.textContent = mensaje;
+                errorMsg.classList.remove('hidden');
+                resultadoBox.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
